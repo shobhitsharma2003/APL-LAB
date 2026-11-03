@@ -3,177 +3,143 @@ using namespace std;
 
 struct Node
 {
-    int data;
-    Node *left;
-    Node *right;
-    int height;
+    int data, height;
+    Node *left, *right;
 
     Node(int x)
     {
         data = x;
-        left = NULL;
-        right = NULL;
         height = 1;
+        left = right = NULL;
     }
 };
 
-int getheight(Node *N)
+int height(Node *p)
 {
-    if (N == NULL)
-        return 0;
-
-    return N->height;
+    return p ? p->height : 0;
 }
 
-int getBalance(Node *N)
+int balance(Node *p)
 {
-    if (N == NULL)
-        return 0;
+    return p ? height(p->left) - height(p->right) : 0;
+}
 
-    return getheight(N->left) - getheight(N->right);
+void update(Node *p)
+{
+    p->height = 1 + max(height(p->left), height(p->right));
 }
 
 Node *rightRotate(Node *y)
 {
     Node *x = y->left;
-    Node *temp = x->right;
-
+    y->left = x->right;
     x->right = y;
-    y->left = temp;
-
-    y->height = 1 + max(getheight(y->left), getheight(y->right));
-    x->height = 1 + max(getheight(x->left), getheight(x->right));
-
+    update(y);
+    update(x);
     return x;
 }
 
 Node *leftRotate(Node *x)
 {
     Node *y = x->right;
-    Node *temp = y->left;
-
+    x->right = y->left;
     y->left = x;
-    x->right = temp;
-
-    x->height = 1 + max(getheight(x->left), getheight(x->right));
-    y->height = 1 + max(getheight(y->left), getheight(y->right));
-
+    update(x);
+    update(y);
     return y;
 }
 
-Node *insert(Node *node, int key)
+Node *insert(Node *root, int key)
 {
-    if (node == NULL)
+    if (!root)
         return new Node(key);
 
-    if (key < node->data)
-        node->left = insert(node->left, key);
-    else if (key > node->data)
-        node->right = insert(node->right, key);
+    if (key < root->data)
+        root->left = insert(root->left, key);
+    else if (key > root->data)
+        root->right = insert(root->right, key);
     else
-        return node;
+        return root;
 
-    node->height = 1 + max(getheight(node->left),
-                           getheight(node->right));
+    update(root);
+    int b = balance(root);
 
-    int balance = getBalance(node);
+    if (b > 1 && key < root->left->data)
+        return rightRotate(root); // LL
 
-    if (balance > 1 && key < node->left->data)
-        return rightRotate(node);
+    if (b < -1 && key > root->right->data)
+        return leftRotate(root); // RR
 
-    if (balance < -1 && key > node->right->data)
-        return leftRotate(node);
-
-    if (balance > 1 && key > node->left->data)
-    {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
+    if (b > 1 && key > root->left->data)
+    { // LR
+        root->left = leftRotate(root->left);
+        return rightRotate(root);
     }
 
-    if (balance < -1 && key < node->right->data)
-    {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
+    if (b < -1 && key < root->right->data)
+    { // RL
+        root->right = rightRotate(root->right);
+        return leftRotate(root);
     }
 
-    return node;
+    return root;
 }
 
-int findmin(Node *node)
+Node *minNode(Node *root)
 {
-    Node *current = node;
-
-    while (current->left != NULL)
-        current = current->left;
-
-    return current->data;
+    while (root->left)
+        root = root->left;
+    return root;
 }
 
 Node *deleteNode(Node *root, int key)
 {
-    if (root == NULL)
-        return root;
+    if (!root)
+        return NULL;
 
     if (key < root->data)
-    {
         root->left = deleteNode(root->left, key);
-    }
     else if (key > root->data)
-    {
         root->right = deleteNode(root->right, key);
-    }
     else
     {
-
-        if (root->left == NULL || root->right == NULL)
+        if (!root->left || !root->right)
         {
             Node *temp = root->left ? root->left : root->right;
 
-            if (temp == NULL)
+            if (!temp)
             {
                 delete root;
                 return NULL;
             }
 
-            else
-            {
-                Node *oldRoot = root;
-                root = temp;
-                delete oldRoot;
-            }
+            *root = *temp;
+            delete temp;
         }
         else
         {
-
-            int minValue = findmin(root->right);
-
-            root->data = minValue;
-
-            root->right = deleteNode(root->right, minValue);
+            Node *temp = minNode(root->right);
+            root->data = temp->data;
+            root->right = deleteNode(root->right, temp->data);
         }
     }
 
-    if (root == NULL)
-        return root;
+    update(root);
+    int b = balance(root);
 
-    root->height = 1 + max(getheight(root->left),
-                           getheight(root->right));
-
-    int balance = getBalance(root);
-
-    if (balance > 1 && getBalance(root->left) >= 0)
+    if (b > 1 && balance(root->left) >= 0)
         return rightRotate(root);
 
-    if (balance > 1 && getBalance(root->left) < 0)
+    if (b > 1 && balance(root->left) < 0)
     {
         root->left = leftRotate(root->left);
         return rightRotate(root);
     }
 
-    if (balance < -1 && getBalance(root->right) <= 0)
+    if (b < -1 && balance(root->right) <= 0)
         return leftRotate(root);
 
-    if (balance < -1 && getBalance(root->right) > 0)
+    if (b < -1 && balance(root->right) > 0)
     {
         root->right = rightRotate(root->right);
         return leftRotate(root);
@@ -182,106 +148,69 @@ Node *deleteNode(Node *root, int key)
     return root;
 }
 
-void inorder(Node *root)
-{
-    if (root == NULL)
-        return;
-
-    inorder(root->left);
-    cout << root->data << " ";
-    inorder(root->right);
-}
-
-void preorder(Node *root)
-{
-    if (root == NULL)
-        return;
-
-    cout << root->data << " ";
-    preorder(root->left);
-    preorder(root->right);
-}
-
-void postorder(Node *root)
-{
-    if (root == NULL)
-        return;
-
-    postorder(root->left);
-    postorder(root->right);
-    cout << root->data << " ";
-}
-
 bool search(Node *root, int key)
 {
-    if (root == NULL)
+    if (!root)
         return false;
-
-    if (key == root->data)
+    if (root->data == key)
         return true;
 
-    if (key < root->data)
-        return search(root->left, key);
-
-    return search(root->right, key);
+    return key < root->data
+               ? search(root->left, key)
+               : search(root->right, key);
 }
 
-void freeTree(Node *root)
+void inorder(Node *root, ofstream &out)
 {
-    if (root == NULL)
+    if (!root)
         return;
 
-    freeTree(root->left);
-    freeTree(root->right);
-
-    delete root;
+    inorder(root->left, out);
+    out << root->data << " ";
+    inorder(root->right, out);
 }
+
+// ---------- MAIN ----------
 
 int main()
 {
-    Node *root = NULL;
+    ifstream in("input.txt");
+    ofstream out("output.txt");
+    ofstream heightFile("height_data.csv");
 
-    int n, value;
+    Node *avl = NULL;
+    vector<int> a;
+    int x;
 
-    cout << "Enter number of nodes: ";
-    cin >> n;
+    heightFile << "Nodes,Height\n";
 
-    cout << "Enter " << n << " node elements:\n";
-
-    for (int i = 0; i < n; i++)
+    while (in >> x)
     {
-        cin >> value;
-        root = insert(root, value);
+        a.push_back(x);
+        avl = insert(avl, x);
+        heightFile << a.size() << "," << height(avl) << "\n";
     }
 
-    cout << "\nInorder traversal: ";
-    inorder(root);
+    cout << "AVL Height: " << height(avl) << endl;
+    cout << "Root Balance Factor: " << balance(avl) << endl;
 
-    cout << "\nPreorder traversal: ";
-    preorder(root);
+    cout << "Inorder: ";
+    inorder(avl, out);
 
-    cout << "\nPostorder traversal: ";
-    postorder(root);
+    // Deletion
+    cout << "Enter value to delete: ";
+    cin >> x;
 
-    cout << "\n\nEnter value to search: ";
-    cin >> value;
+    avl = deleteNode(avl, x);
 
-    if (search(root, value))
-        cout << value << " is present in the AVL tree\n";
-    else
-        cout << value << " is not present in the AVL tree\n";
+    out << "\nAfter deletion: ";
+    inorder(avl, out);
 
-    cout << "\nEnter value to delete: ";
-    cin >> value;
+    cout << "Height after deletion: "
+         << height(avl) << endl;
 
-    root = deleteNode(root, value);
-
-    cout << "Inorder traversal after deletion: ";
-    inorder(root);
-
-    cout << "\n";
-
-    freeTree(root);
+    cout << "Files created successfully.\n";
+    cout << "Use height_data.csv to plot Height vs Nodes.\n";
 
     return 0;
 }

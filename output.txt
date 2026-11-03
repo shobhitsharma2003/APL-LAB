@@ -1,0 +1,46 @@
+Input file opened successfully.
+
+Array:
+10 20 5 8 15 30 2 
+
+Segment Tree nodes (index: min, max):
+1: (2, 30)
+2: (5, 20)
+3: (2, 30)
+4: (10, 20)
+5: (5, 8)
+6: (15, 30)
+7: (2, 2)
+8: (10, 10)
+9: (20, 20)
+10: (5, 5)
+11: (8, 8)
+12: (15, 15)
+13: (30, 30)
+
+Number of queries: 3
+
+Query [0, 3]
+Minimum = 5
+Maximum = 20
+
+Query [2, 5]
+Minimum = 5
+Maximum = 30
+
+Query [1, 6]
+Minimum = 2
+Maximum = 30
+
+Update:
+Index = 3
+New Value = 25
+
+Array:
+10 20 5 25 15 30 2 
+
+After update:
+Minimum = 2
+Maximum = 30
+
+Output saved to output.txt
